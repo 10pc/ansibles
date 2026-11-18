@@ -1,0 +1,60 @@
+- name: provision alpine vm on proxmox
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_files:
+    - ../group_vars/proxmox.yml
+
+  tasks:
+    - name: require proxmox api token
+      ansible.builtin.assert:
+        that:
+          - lookup('env', 'PROXMOX_TOKEN_ID') | length > 0
+          - lookup('env', 'PROXMOX_TOKEN_SECRET') | length > 0
+        fail_msg: "set PROXMOX_TOKEN_ID and PROXMOX_TOKEN_SECRET"
+
+    - name: create vm
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ proxmox_api_host }}"
+        api_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+        api_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        node: "{{ proxmox_node }}"
+        name: "{{ vm_name }}"
+        vmid: "{{ vm_vmid | default(omit) }}"
+        memory: "{{ vm_memory }}"
+        cores: "{{ vm_cores }}"
+        sockets: 1
+        ostype: l26
+        sata:
+          sata0: "{{ proxmox_storage }}:{{ vm_disk_gb }}"
+        ide:
+          ide2: "{{ proxmox_iso }},media=cdrom"
+        net:
+          net0: "virtio,bridge={{ proxmox_bridge }}"
+        boot: "order=sata0;ide2"
+        state: present
+      register: vm_create
+
+    - name: start vm
+      community.proxmox.proxmox_kvm:
+        api_host: "{{ proxmox_api_host }}"
+        api_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+        api_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        name: "{{ vm_name }}"
+        state: started
+      register: vm_start
+
+    - name: get vm info
+      community.proxmox.proxmox_vm_info:
+        api_host: "{{ proxmox_api_host }}"
+        api_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+        api_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+        validate_certs: "{{ proxmox_validate_certs }}"
+        node: "{{ proxmox_node }}"
+        name: "{{ vm_name }}"
+        type: qemu
+      register: vm_info
+

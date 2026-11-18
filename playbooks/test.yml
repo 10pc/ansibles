@@ -1,0 +1,19 @@
+- name: test connection
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  tasks:
+    - name: get vms
+      community.proxmox.proxmox_vm_info:
+        api_host: "100.100.1.10"
+        api_token_id: "{{ lookup('env', 'PROXMOX_TOKEN_ID') }}"
+        api_token_secret: "{{ lookup('env', 'PROXMOX_TOKEN_SECRET') }}"
+        validate_certs: false
+      register: vm_info
+
+    - name: display vms
+      ansible.builtin.debug:
+        msg: "{{ item.name }} on {{ item.node }} ({{ item.status }})"
+      loop: "{{ vm_info.proxmox_vms }}"
+

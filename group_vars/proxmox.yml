@@ -1,0 +1,11 @@
+proxmox_api_host: 100.100.1.10
+proxmox_validate_certs: false
+proxmox_node: pve-1
+proxmox_storage: local-lvm
+proxmox_bridge: vmbr0
+proxmox_iso: local:iso/alpine-virt-3.24.4-x86_64.iso
+
+vm_name: alpine-test
+vm_memory: 512
+vm_cores: 1
+vm_disk_gb: 1
